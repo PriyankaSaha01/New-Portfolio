@@ -1,0 +1,1381 @@
+=================================================================
+PRIYANKA SAHA - 3D PORTFOLIO - COMPLETE CODE
+=================================================================
+
+This file contains all the code you need to run your portfolio.
+Simply copy each section into the corresponding file.
+
+=================================================================
+FILE 1: package.json (Save in project root)
+=================================================================
+
+{
+  "name": "frontend",
+  "version": "0.1.0",
+  "private": true,
+  "dependencies": {
+    "@hookform/resolvers": "^5.0.1",
+    "@radix-ui/react-accordion": "^1.2.8",
+    "@radix-ui/react-alert-dialog": "^1.1.11",
+    "@radix-ui/react-aspect-ratio": "^1.1.4",
+    "@radix-ui/react-avatar": "^1.1.7",
+    "@radix-ui/react-checkbox": "^1.2.3",
+    "@radix-ui/react-collapsible": "^1.1.8",
+    "@radix-ui/react-context-menu": "^2.2.12",
+    "@radix-ui/react-dialog": "^1.1.11",
+    "@radix-ui/react-dropdown-menu": "^2.1.12",
+    "@radix-ui/react-hover-card": "^1.1.11",
+    "@radix-ui/react-label": "^2.1.4",
+    "@radix-ui/react-menubar": "^1.1.12",
+    "@radix-ui/react-navigation-menu": "^1.2.10",
+    "@radix-ui/react-popover": "^1.1.11",
+    "@radix-ui/react-progress": "^1.1.4",
+    "@radix-ui/react-radio-group": "^1.3.4",
+    "@radix-ui/react-scroll-area": "^1.2.6",
+    "@radix-ui/react-select": "^2.2.2",
+    "@radix-ui/react-separator": "^1.1.4",
+    "@radix-ui/react-slider": "^1.3.2",
+    "@radix-ui/react-slot": "^1.2.0",
+    "@radix-ui/react-switch": "^1.2.2",
+    "@radix-ui/react-tabs": "^1.1.9",
+    "@radix-ui/react-toast": "^1.2.11",
+    "@radix-ui/react-toggle": "^1.1.6",
+    "@radix-ui/react-toggle-group": "^1.1.7",
+    "@radix-ui/react-tooltip": "^1.2.4",
+    "axios": "^1.8.4",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "cmdk": "^1.1.1",
+    "cra-template": "1.2.0",
+    "date-fns": "^4.1.0",
+    "embla-carousel-react": "^8.6.0",
+    "input-otp": "^1.4.2",
+    "lucide-react": "^0.507.0",
+    "next-themes": "^0.4.6",
+    "react": "^19.0.0",
+    "react-day-picker": "8.10.1",
+    "react-dom": "^19.0.0",
+    "react-hook-form": "^7.56.2",
+    "react-resizable-panels": "^3.0.1",
+    "react-router-dom": "^7.5.1",
+    "react-scripts": "5.0.1",
+    "recharts": "^3.6.0",
+    "sonner": "^2.0.3",
+    "tailwind-merge": "^3.2.0",
+    "tailwindcss-animate": "^1.0.7",
+    "vaul": "^1.1.2",
+    "zod": "^3.24.4"
+  },
+  "scripts": {
+    "start": "craco start",
+    "build": "craco build",
+    "test": "craco test"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "devDependencies": {
+    "@babel/plugin-proposal-private-property-in-object": "^7.21.11",
+    "@craco/craco": "^7.1.0",
+    "@emergentbase/visual-edits": "https://assets.emergent.sh/npm/emergentbase-visual-edits-1.0.8.tgz",
+    "@eslint/js": "9.23.0",
+    "autoprefixer": "^10.4.20",
+    "eslint": "9.23.0",
+    "eslint-plugin-import": "2.31.0",
+    "eslint-plugin-jsx-a11y": "6.10.2",
+    "eslint-plugin-react": "7.37.4",
+    "eslint-plugin-react-hooks": "5.2.0",
+    "globals": "15.15.0",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.17"
+  },
+  "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
+}
+
+=================================================================
+FILE 2: App.js (Save in src/ folder)
+=================================================================
+
+import { useEffect, useRef } from 'react';
+import './App.css';
+
+function App() {
+  const canvasRef = useRef(null);
+  const cursorGlowRef = useRef(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const gl = canvas.getContext('webgl', { alpha: true, antialias: true });
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      if (gl) gl.viewport(0, 0, canvas.width, canvas.height);
+    }
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    // WebGL shaders for particle field
+    const vsSource = `
+      attribute vec3 aPos;
+      attribute float aSize;
+      attribute vec3 aColor;
+      uniform mat4 uProj;
+      uniform mat4 uView;
+      uniform float uTime;
+      varying vec3 vColor;
+      varying float vAlpha;
+      void main() {
+        vec3 pos = aPos;
+        pos.y += sin(uTime * 0.3 + pos.x * 0.5) * 0.3;
+        pos.x += cos(uTime * 0.2 + pos.z * 0.3) * 0.2;
+        vec4 mvPos = uView * vec4(pos, 1.0);
+        gl_Position = uProj * mvPos;
+        gl_PointSize = aSize * (200.0 / -mvPos.z);
+        vColor = aColor;
+        float dist = length(mvPos.xyz);
+        vAlpha = smoothstep(30.0, 5.0, dist) * 0.7;
+      }
+    `;
+
+    const fsSource = `
+      precision mediump float;
+      varying vec3 vColor;
+      varying float vAlpha;
+      void main() {
+        float d = length(gl_PointCoord - 0.5) * 2.0;
+        float alpha = smoothstep(1.0, 0.0, d) * vAlpha;
+        gl_FragColor = vec4(vColor, alpha);
+      }
+    `;
+
+    const lineVS = `
+      attribute vec3 aPos;
+      uniform mat4 uProj;
+      uniform mat4 uView;
+      uniform float uTime;
+      varying float vAlpha;
+      void main() {
+        vec3 pos = aPos;
+        pos.y += sin(uTime * 0.3 + pos.x * 0.5) * 0.3;
+        pos.x += cos(uTime * 0.2 + pos.z * 0.3) * 0.2;
+        vec4 mvPos = uView * vec4(pos, 1.0);
+        gl_Position = uProj * mvPos;
+        float dist = length(mvPos.xyz);
+        vAlpha = smoothstep(25.0, 8.0, dist) * 0.12;
+      }
+    `;
+
+    const lineFS = `
+      precision mediump float;
+      varying float vAlpha;
+      void main() {
+        gl_FragColor = vec4(0.79, 0.63, 0.86, vAlpha);
+      }
+    `;
+
+    function compileShader(src, type) {
+      const s = gl.createShader(type);
+      gl.shaderSource(s, src);
+      gl.compileShader(s);
+      return s;
+    }
+
+    function createProgram(vs, fs) {
+      const p = gl.createProgram();
+      gl.attachShader(p, compileShader(vs, gl.VERTEX_SHADER));
+      gl.attachShader(p, compileShader(fs, gl.FRAGMENT_SHADER));
+      gl.linkProgram(p);
+      return p;
+    }
+
+    const pointProg = createProgram(vsSource, fsSource);
+    const lineProg = createProgram(lineVS, lineFS);
+
+    // Generate particles
+    const NUM = 400;
+    const positions = new Float32Array(NUM * 3);
+    const sizes = new Float32Array(NUM);
+    const colors = new Float32Array(NUM * 3);
+
+    const palette = [
+      [0.79, 0.63, 0.86],
+      [0.49, 0.72, 0.85],
+      [0.95, 0.77, 0.49],
+      [0.55, 0.91, 0.63],
+      [0.9, 0.88, 0.94]
+    ];
+
+    for (let i = 0; i < NUM; i++) {
+      positions[i*3]   = (Math.random() - 0.5) * 30;
+      positions[i*3+1] = (Math.random() - 0.5) * 30;
+      positions[i*3+2] = (Math.random() - 0.5) * 30;
+      sizes[i] = Math.random() * 3 + 1;
+      const c = palette[Math.floor(Math.random() * palette.length)];
+      colors[i*3] = c[0]; colors[i*3+1] = c[1]; colors[i*3+2] = c[2];
+    }
+
+    // Generate connection lines
+    const CONN_DIST = 4.5;
+    const lineVerts = [];
+    for (let i = 0; i < NUM; i++) {
+      for (let j = i+1; j < NUM; j++) {
+        const dx = positions[i*3] - positions[j*3];
+        const dy = positions[i*3+1] - positions[j*3+1];
+        const dz = positions[i*3+2] - positions[j*3+2];
+        if (dx*dx + dy*dy + dz*dz < CONN_DIST * CONN_DIST) {
+          lineVerts.push(
+            positions[i*3], positions[i*3+1], positions[i*3+2],
+            positions[j*3], positions[j*3+1], positions[j*3+2]
+          );
+        }
+      }
+    }
+    const lineData = new Float32Array(lineVerts);
+
+    // Buffers
+    function createBuffer(data) {
+      const b = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, b);
+      gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
+      return b;
+    }
+
+    const posBuf = createBuffer(positions);
+    const sizeBuf = createBuffer(sizes);
+    const colBuf = createBuffer(colors);
+    const lineBuf = createBuffer(lineData);
+
+    // Matrix utils
+    function perspective(fov, aspect, near, far) {
+      const f = 1 / Math.tan(fov/2);
+      const nf = 1 / (near - far);
+      return new Float32Array([
+        f/aspect,0,0,0,
+        0,f,0,0,
+        0,0,(far+near)*nf,-1,
+        0,0,2*far*near*nf,0
+      ]);
+    }
+
+    function lookAt(eye, center, up) {
+      const zx=eye[0]-center[0], zy=eye[1]-center[1], zz=eye[2]-center[2];
+      let len = 1/Math.sqrt(zx*zx+zy*zy+zz*zz);
+      const z0=zx*len, z1=zy*len, z2=zz*len;
+      const xx=up[1]*z2-up[2]*z1, xy=up[2]*z0-up[0]*z2, xz=up[0]*z1-up[1]*z0;
+      len=1/Math.sqrt(xx*xx+xy*xy+xz*xz);
+      const x0=xx*len, x1=xy*len, x2=xz*len;
+      const y0=z1*x2-z2*x1, y1=z2*x0-z0*x2, y2=z0*x1-z1*x0;
+      return new Float32Array([
+        x0,y0,z0,0,
+        x1,y1,z1,0,
+        x2,y2,z2,0,
+        -(x0*eye[0]+x1*eye[1]+x2*eye[2]),
+        -(y0*eye[0]+y1*eye[1]+y2*eye[2]),
+        -(z0*eye[0]+z1*eye[1]+z2*eye[2]),1
+      ]);
+    }
+
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+
+    let mouseX = 0, mouseY = 0;
+    const handleMouseMove = (e) => {
+      mouseX = (e.clientX / window.innerWidth - 0.5) * 2;
+      mouseY = (e.clientY / window.innerHeight - 0.5) * 2;
+      if (cursorGlowRef.current) {
+        cursorGlowRef.current.style.left = e.clientX + 'px';
+        cursorGlowRef.current.style.top = e.clientY + 'px';
+      }
+    };
+    document.addEventListener('mousemove', handleMouseMove);
+
+    let scrollY = 0;
+    const handleScroll = () => {
+      scrollY = window.pageYOffset;
+    };
+    window.addEventListener('scroll', handleScroll);
+
+    let animationId;
+    function render(t) {
+      t *= 0.001;
+      gl.clearColor(0, 0, 0, 0);
+      gl.clear(gl.COLOR_BUFFER_BIT);
+
+      const aspect = canvas.width / canvas.height;
+      const proj = perspective(Math.PI/3, aspect, 0.1, 100);
+
+      const camY = -scrollY * 0.003;
+      const camX = mouseX * 1.5;
+      const camYm = mouseY * 1 + camY;
+      const view = lookAt([camX, camYm, 12], [0, camY, 0], [0, 1, 0]);
+
+      // Draw lines
+      gl.useProgram(lineProg);
+      const lPosLoc = gl.getAttribLocation(lineProg, 'aPos');
+      gl.bindBuffer(gl.ARRAY_BUFFER, lineBuf);
+      gl.enableVertexAttribArray(lPosLoc);
+      gl.vertexAttribPointer(lPosLoc, 3, gl.FLOAT, false, 0, 0);
+      gl.uniformMatrix4fv(gl.getUniformLocation(lineProg, 'uProj'), false, proj);
+      gl.uniformMatrix4fv(gl.getUniformLocation(lineProg, 'uView'), false, view);
+      gl.uniform1f(gl.getUniformLocation(lineProg, 'uTime'), t);
+      gl.drawArrays(gl.LINES, 0, lineData.length / 3);
+
+      // Draw points
+      gl.useProgram(pointProg);
+      const pPosLoc = gl.getAttribLocation(pointProg, 'aPos');
+      const pSizeLoc = gl.getAttribLocation(pointProg, 'aSize');
+      const pColLoc = gl.getAttribLocation(pointProg, 'aColor');
+
+      gl.bindBuffer(gl.ARRAY_BUFFER, posBuf);
+      gl.enableVertexAttribArray(pPosLoc);
+      gl.vertexAttribPointer(pPosLoc, 3, gl.FLOAT, false, 0, 0);
+
+      gl.bindBuffer(gl.ARRAY_BUFFER, sizeBuf);
+      gl.enableVertexAttribArray(pSizeLoc);
+      gl.vertexAttribPointer(pSizeLoc, 1, gl.FLOAT, false, 0, 0);
+
+      gl.bindBuffer(gl.ARRAY_BUFFER, colBuf);
+      gl.enableVertexAttribArray(pColLoc);
+      gl.vertexAttribPointer(pColLoc, 3, gl.FLOAT, false, 0, 0);
+
+      gl.uniformMatrix4fv(gl.getUniformLocation(pointProg, 'uProj'), false, proj);
+      gl.uniformMatrix4fv(gl.getUniformLocation(pointProg, 'uView'), false, view);
+      gl.uniform1f(gl.getUniformLocation(pointProg, 'uTime'), t);
+      gl.drawArrays(gl.POINTS, 0, NUM);
+
+      animationId = requestAnimationFrame(render);
+    }
+    animationId = requestAnimationFrame(render);
+
+    // Scroll reveal observer
+    const reveals = document.querySelectorAll('.reveal');
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          e.target.classList.add('visible');
+        }
+      });
+    }, { threshold: 0.15 });
+    reveals.forEach(el => observer.observe(el));
+
+    // Nav active state
+    const sections = document.querySelectorAll('section');
+    const navLinks = document.querySelectorAll('nav a');
+    const navObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const id = entry.target.id;
+          navLinks.forEach((link) => {
+            link.classList.toggle('active', link.getAttribute('href') === '#' + id);
+          });
+        }
+      });
+    }, { threshold: 0.4 });
+    sections.forEach(s => navObserver.observe(s));
+
+    // Cleanup
+    return () => {
+      window.removeEventListener('resize', resizeCanvas);
+      document.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('scroll', handleScroll);
+      cancelAnimationFrame(animationId);
+      observer.disconnect();
+      navObserver.disconnect();
+    };
+  }, []);
+
+  return (
+    <div className="App">
+      <canvas id="bg-canvas" ref={canvasRef}></canvas>
+      <div className="cursor-glow" ref={cursorGlowRef}></div>
+
+      <nav id="mainNav">
+        <a href="#hero"><span className="nav-label">Home</span></a>
+        <a href="#about"><span className="nav-label">About</span></a>
+        <a href="#skills"><span className="nav-label">Skills</span></a>
+        <a href="#projects"><span className="nav-label">Projects</span></a>
+        <a href="#education"><span className="nav-label">Education</span></a>
+        <a href="#certifications"><span className="nav-label">Certs</span></a>
+        <a href="#contact"><span className="nav-label">Contact</span></a>
+      </nav>
+
+      <div className="content-wrapper">
+        {/* HERO */}
+        <section className="hero" id="hero">
+          <div className="hero-tag">Graphic Designer · IT Student</div>
+          <h1>Priyanka<br /><span className="highlight">Saha</span></h1>
+          <p className="hero-sub">Blending technology with visual storytelling — crafting brands, layouts, and digital experiences that communicate with clarity and impact.</p>
+          <div className="hero-contact">
+            <span>📍 Malda, West Bengal</span>
+            <a href="mailto:priyanka.riya2003@gmail.com">✉ priyanka.riya2003@gmail.com</a>
+            <a href="tel:+918597049809">📞 +91-8597049809</a>
+          </div>
+          <div className="scroll-indicator">
+            <span>Scroll</span>
+            <div className="scroll-line"></div>
+          </div>
+        </section>
+
+        {/* ABOUT */}
+        <section id="about">
+          <div className="about-grid reveal">
+            <div className="about-text">
+              <div className="section-header">
+                <h2>About Me</h2>
+                <div className="line"></div>
+              </div>
+              <p>B.Tech Information Technology student transitioning into graphic design with a strong interest in visual communication and branding.</p>
+              <p>Currently building skills in design fundamentals such as typography, color theory, and layout composition. Familiar with industry tools including Adobe Photoshop, Adobe Illustrator, and Figma, and actively working on developing a portfolio of creative projects.</p>
+            </div>
+            <div className="info-grid">
+              <div className="info-item">
+                <div className="label">Name</div>
+                <div className="value">Priyanka Saha</div>
+              </div>
+              <div className="info-item">
+                <div className="label">Location</div>
+                <div className="value">Malda, WB</div>
+              </div>
+              <div className="info-item">
+                <div className="label">Degree</div>
+                <div className="value">B.Tech IT</div>
+              </div>
+              <div className="info-item">
+                <div className="label">Graduating</div>
+                <div className="value">2026</div>
+              </div>
+              <div className="info-item">
+                <div className="label">Focus</div>
+                <div className="value">Graphic Design</div>
+              </div>
+              <div className="info-item">
+                <div className="label">Status</div>
+                <div className="value">Open to Work</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* SKILLS */}
+        <section className="skills-section" id="skills">
+          <div className="skills-container">
+            <div className="section-header reveal">
+              <h2>Skills & Tools</h2>
+              <div className="line"></div>
+            </div>
+            <div className="skills-categories reveal">
+              <div className="skill-card">
+                <h3>Design Fundamentals</h3>
+                <div className="skill-tags">
+                  <span className="skill-tag">Typography</span>
+                  <span className="skill-tag">Color Theory</span>
+                  <span className="skill-tag">Layout & Composition</span>
+                  <span className="skill-tag">Visual Hierarchy</span>
+                  <span className="skill-tag">Basic Branding</span>
+                </div>
+              </div>
+              <div className="skill-card">
+                <h3>Design Tools</h3>
+                <div className="skill-tags">
+                  <span className="skill-tag">Adobe Photoshop</span>
+                  <span className="skill-tag">Adobe Illustrator</span>
+                  <span className="skill-tag">Figma</span>
+                </div>
+              </div>
+              <div className="skill-card">
+                <h3>Technical</h3>
+                <div className="skill-tags">
+                  <span className="skill-tag">C</span>
+                  <span className="skill-tag">C++</span>
+                  <span className="skill-tag">Java</span>
+                  <span className="skill-tag">SQL</span>
+                  <span className="skill-tag">HTML</span>
+                  <span className="skill-tag">CSS</span>
+                </div>
+              </div>
+              <div className="skill-card">
+                <h3>Soft Skills</h3>
+                <div className="skill-tags">
+                  <span className="skill-tag">Communication</span>
+                  <span className="skill-tag">Adaptability</span>
+                  <span className="skill-tag">Time Management</span>
+                  <span className="skill-tag">Attention to Detail</span>
+                  <span className="skill-tag">Willingness to Learn</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* PROJECTS */}
+        <section className="projects-section" id="projects">
+          <div className="projects-container">
+            <div className="section-header reveal">
+              <h2>Projects</h2>
+              <div className="line"></div>
+            </div>
+            <div className="project-card reveal">
+              <div className="project-num">PROJECT 01</div>
+              <h3>AI-Driven Genome Disorder Prediction System with XAI</h3>
+              <ul>
+                <li>Developed a machine learning pipeline to classify genome patterns for disorder prediction</li>
+                <li>Applied explainable AI techniques (LIME, SHAP) to improve transparency and interpretability</li>
+                <li>Focused on reliability and understanding of model decisions through feature importance analysis</li>
+              </ul>
+              <div className="project-tags">
+                <span>Machine Learning</span>
+                <span>XAI</span>
+                <span>LIME</span>
+                <span>SHAP</span>
+                <span>Genomics</span>
+              </div>
+            </div>
+            <div className="project-card reveal">
+              <div className="project-num">PROJECT 02</div>
+              <h3>Design Portfolio (In Progress)</h3>
+              <ul>
+                <li>Actively creating projects including branding concepts, social media creatives, and poster designs</li>
+                <li>Practicing layout design, typography, and color combinations to improve visual communication skills</li>
+              </ul>
+              <div className="project-tags">
+                <span>Branding</span>
+                <span>Social Media</span>
+                <span>Poster Design</span>
+                <span>Typography</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* EDUCATION */}
+        <section className="education-section" id="education">
+          <div className="education-container">
+            <div className="section-header reveal">
+              <h2>Education</h2>
+              <div className="line"></div>
+            </div>
+            <div className="timeline reveal">
+              <div className="timeline-item">
+                <h3>B.Tech in Information Technology</h3>
+                <div className="institution">Techno Main Salt Lake</div>
+                <div className="year">2022 — 2026</div>
+              </div>
+              <div className="timeline-item">
+                <h3>Higher Secondary</h3>
+                <div className="institution">Board Examination</div>
+                <div className="year">Completed</div>
+                <div className="scores">
+                  <div className="score-badge">Score: <strong>83%</strong></div>
+                </div>
+              </div>
+              <div className="timeline-item">
+                <h3>Secondary</h3>
+                <div className="institution">Board Examination</div>
+                <div className="year">Completed</div>
+                <div className="scores">
+                  <div className="score-badge">Score: <strong>75.29%</strong></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* CERTIFICATIONS */}
+        <section id="certifications">
+          <div className="reveal" style={{width: '100%', maxWidth: '900px'}}>
+            <div className="section-header">
+              <h2>Certifications</h2>
+              <div className="line"></div>
+            </div>
+            <div className="cert-card" style={{marginTop: '24px'}}>
+              <div className="cert-badge">VERIFIED</div>
+              <h3>Data Analytics Job Simulation</h3>
+              <div className="cert-org">Deloitte Australia — via Forage</div>
+              <div className="cert-date">June 2025</div>
+              <ul>
+                <li>Completed practical tasks involving data cleaning, dashboard creation, and analytical insights</li>
+                <li>Analyzed client telemetry data to identify patterns and trends</li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        {/* CONTACT */}
+        <section className="contact-section" id="contact">
+          <div className="reveal">
+            <h2>Let's Connect</h2>
+            <p>Open to graphic design internships, freelance opportunities, and creative collaborations.</p>
+            <div className="contact-links" style={{marginTop: '16px'}}>
+              <a href="mailto:priyanka.riya2003@gmail.com" className="contact-link">
+                <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+                priyanka.riya2003@gmail.com
+              </a>
+              <a href="tel:+918597049809" className="contact-link">
+                <svg viewBox="0 0 24 24"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>
+                +91-8597049809
+              </a>
+            </div>
+          </div>
+        </section>
+
+        <footer>
+          © 2026 Priyanka Saha — Designed with ✦ purpose
+        </footer>
+      </div>
+    </div>
+  );
+}
+
+export default App;
+
+=================================================================
+FILE 3: App.css (Save in src/ folder)  
+=================================================================
+
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&display=swap');
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg: #0a0a0f;
+  --surface: #12121a;
+  --card: #1a1a26;
+  --accent: #c9a0dc;
+  --accent2: #7eb8da;
+  --accent3: #f2c57c;
+  --text: #e8e6f0;
+  --text-dim: #8a889a;
+  --border: rgba(255,255,255,0.06);
+}
+
+html {
+  scroll-behavior: smooth;
+  scrollbar-width: thin;
+  scrollbar-color: var(--accent) var(--bg);
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  overflow-x: hidden;
+}
+
+.App {
+  position: relative;
+  min-height: 100vh;
+}
+
+canvas#bg-canvas {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.content-wrapper {
+  position: relative;
+  z-index: 1;
+}
+
+/* NAV */
+nav {
+  position: fixed;
+  right: 28px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  align-items: center;
+}
+
+nav a {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: var(--text-dim);
+  transition: all 0.4s cubic-bezier(.4,0,.2,1);
+  position: relative;
+  text-decoration: none;
+}
+
+nav a.active {
+  background: var(--accent);
+  box-shadow: 0 0 14px var(--accent);
+  transform: scale(1.4);
+}
+
+nav a .nav-label {
+  position: absolute;
+  right: 22px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: var(--card);
+  color: var(--text);
+  font-size: 11px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 500;
+  padding: 4px 10px;
+  border-radius: 6px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s;
+  border: 1px solid var(--border);
+}
+
+nav a:hover .nav-label { opacity: 1; }
+
+/* SECTIONS */
+section {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 40px;
+  position: relative;
+}
+
+/* HERO */
+.hero {
+  flex-direction: column;
+  text-align: center;
+  gap: 24px;
+}
+
+.hero-tag {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: var(--accent);
+  opacity: 0;
+  animation: fadeUp 1s 0.2s forwards;
+}
+
+.hero h1 {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: clamp(42px, 8vw, 96px);
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: -2px;
+  opacity: 0;
+  animation: fadeUp 1s 0.4s forwards;
+}
+
+.hero h1 .highlight {
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.hero-sub {
+  font-size: clamp(14px, 2vw, 18px);
+  color: var(--text-dim);
+  max-width: 540px;
+  line-height: 1.7;
+  opacity: 0;
+  animation: fadeUp 1s 0.6s forwards;
+}
+
+.hero-contact {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: 8px;
+  opacity: 0;
+  animation: fadeUp 1s 0.8s forwards;
+}
+
+.hero-contact a, .hero-contact span {
+  font-size: 13px;
+  color: var(--text-dim);
+  text-decoration: none;
+  padding: 8px 16px;
+  border: 1px solid var(--border);
+  border-radius: 100px;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.hero-contact a:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(201,160,220,0.06);
+}
+
+.scroll-indicator {
+  position: absolute;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  opacity: 0;
+  animation: fadeUp 1s 1.2s forwards;
+}
+
+.scroll-indicator span {
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  font-family: 'Space Grotesk', sans-serif;
+}
+
+.scroll-line {
+  width: 1px;
+  height: 40px;
+  background: linear-gradient(to bottom, var(--accent), transparent);
+  animation: scrollPulse 2s infinite;
+}
+
+@keyframes scrollPulse {
+  0%, 100% { opacity: 0.3; transform: scaleY(0.6); }
+  50% { opacity: 1; transform: scaleY(1); }
+}
+
+/* SECTION TITLES */
+.section-header {
+  margin-bottom: 48px;
+}
+
+.section-header h2 {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: clamp(28px, 5vw, 48px);
+  font-weight: 600;
+  letter-spacing: -1px;
+}
+
+.section-header .line {
+  width: 48px;
+  height: 3px;
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+  border-radius: 2px;
+  margin-top: 12px;
+}
+
+/* ABOUT */
+.about-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 48px;
+  max-width: 1000px;
+  align-items: start;
+}
+
+.about-text p {
+  color: var(--text-dim);
+  line-height: 1.8;
+  font-size: 15px;
+  margin-bottom: 20px;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.info-item {
+  padding: 16px;
+  background: var(--card);
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  transition: all 0.4s;
+}
+
+.info-item:hover {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(201,160,220,0.08);
+}
+
+.info-item .label {
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  font-family: 'Space Grotesk', sans-serif;
+  margin-bottom: 6px;
+}
+
+.info-item .value {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+}
+
+/* SKILLS */
+.skills-section {
+  flex-direction: column;
+  gap: 20px;
+}
+
+.skills-container {
+  max-width: 1000px;
+  width: 100%;
+}
+
+.skills-categories {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 24px;
+}
+
+.skill-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 28px;
+  transition: all 0.5s cubic-bezier(.4,0,.2,1);
+  position: relative;
+  overflow: hidden;
+}
+
+.skill-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 3px;
+  border-radius: 16px 16px 0 0;
+}
+
+.skill-card:nth-child(1)::before { background: linear-gradient(90deg, var(--accent), transparent); }
+.skill-card:nth-child(2)::before { background: linear-gradient(90deg, var(--accent2), transparent); }
+.skill-card:nth-child(3)::before { background: linear-gradient(90deg, var(--accent3), transparent); }
+.skill-card:nth-child(4)::before { background: linear-gradient(90deg, #8be9a1, transparent); }
+
+.skill-card:hover {
+  transform: translateY(-6px);
+  border-color: rgba(255,255,255,0.1);
+  box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+}
+
+.skill-card h3 {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 20px;
+}
+
+.skill-card:nth-child(1) h3 { color: var(--accent); }
+.skill-card:nth-child(2) h3 { color: var(--accent2); }
+.skill-card:nth-child(3) h3 { color: var(--accent3); }
+.skill-card:nth-child(4) h3 { color: #8be9a1; }
+
+.skill-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.skill-tag {
+  font-size: 13px;
+  padding: 6px 14px;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.04);
+  color: var(--text-dim);
+  border: 1px solid var(--border);
+  transition: all 0.3s;
+}
+
+.skill-card:hover .skill-tag {
+  border-color: rgba(255,255,255,0.1);
+  color: var(--text);
+}
+
+/* PROJECTS */
+.projects-section {
+  flex-direction: column;
+}
+
+.projects-container {
+  max-width: 1000px;
+  width: 100%;
+}
+
+.project-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 36px;
+  margin-bottom: 24px;
+  transition: all 0.5s cubic-bezier(.4,0,.2,1);
+  position: relative;
+  overflow: hidden;
+}
+
+.project-card::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -50%;
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  transition: all 0.5s;
+  opacity: 0;
+}
+
+.project-card:nth-child(2)::after { background: radial-gradient(circle, rgba(201,160,220,0.1), transparent); }
+.project-card:nth-child(3)::after { background: radial-gradient(circle, rgba(126,184,218,0.1), transparent); }
+
+.project-card:hover::after { opacity: 1; }
+
+.project-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(255,255,255,0.1);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+}
+
+.project-num {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 3px;
+  color: var(--accent);
+  margin-bottom: 12px;
+}
+
+.project-card h3 {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 22px;
+  font-weight: 600;
+  margin-bottom: 16px;
+  letter-spacing: -0.5px;
+}
+
+.project-card ul {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.project-card li {
+  font-size: 14px;
+  color: var(--text-dim);
+  line-height: 1.6;
+  padding-left: 18px;
+  position: relative;
+}
+
+.project-card li::before {
+  content: '→';
+  position: absolute;
+  left: 0;
+  color: var(--accent2);
+  font-size: 12px;
+}
+
+.project-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 20px;
+}
+
+.project-tags span {
+  font-size: 11px;
+  padding: 4px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  font-family: 'Space Grotesk', sans-serif;
+  letter-spacing: 0.5px;
+}
+
+/* EDUCATION */
+.education-section {
+  flex-direction: column;
+}
+
+.education-container {
+  max-width: 900px;
+  width: 100%;
+}
+
+.timeline {
+  position: relative;
+  padding-left: 40px;
+}
+
+.timeline::before {
+  content: '';
+  position: absolute;
+  left: 8px;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: linear-gradient(to bottom, var(--accent), var(--accent2), transparent);
+}
+
+.timeline-item {
+  position: relative;
+  margin-bottom: 36px;
+  padding: 28px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  transition: all 0.4s;
+}
+
+.timeline-item::before {
+  content: '';
+  position: absolute;
+  left: -38px;
+  top: 32px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 12px var(--accent);
+}
+
+.timeline-item:hover {
+  border-color: rgba(255,255,255,0.1);
+  transform: translateX(4px);
+}
+
+.timeline-item h3 {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.timeline-item .institution {
+  color: var(--accent2);
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+
+.timeline-item .year {
+  font-size: 12px;
+  color: var(--text-dim);
+  font-family: 'Space Grotesk', sans-serif;
+  letter-spacing: 1px;
+  margin-bottom: 12px;
+}
+
+.timeline-item .scores {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.score-badge {
+  padding: 6px 14px;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--border);
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+.score-badge strong {
+  color: var(--text);
+}
+
+/* CERTIFICATIONS */
+.cert-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 28px;
+  max-width: 700px;
+  transition: all 0.4s;
+}
+
+.cert-card:hover {
+  border-color: var(--accent3);
+  transform: translateY(-3px);
+}
+
+.cert-card .cert-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 6px;
+  background: rgba(242,197,124,0.1);
+  color: var(--accent3);
+  font-size: 11px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 600;
+  letter-spacing: 1px;
+  margin-bottom: 14px;
+}
+
+.cert-card h3 {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.cert-card .cert-org {
+  color: var(--accent3);
+  font-size: 13px;
+  margin-bottom: 6px;
+}
+
+.cert-card .cert-date {
+  color: var(--text-dim);
+  font-size: 12px;
+  margin-bottom: 14px;
+  font-family: 'Space Grotesk', sans-serif;
+}
+
+.cert-card ul {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cert-card li {
+  font-size: 13px;
+  color: var(--text-dim);
+  line-height: 1.6;
+  padding-left: 16px;
+  position: relative;
+}
+
+.cert-card li::before {
+  content: '✦';
+  position: absolute;
+  left: 0;
+  color: var(--accent3);
+  font-size: 8px;
+  top: 4px;
+}
+
+/* CONTACT */
+.contact-section {
+  flex-direction: column;
+  text-align: center;
+  gap: 28px;
+}
+
+.contact-section h2 {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: clamp(32px, 6vw, 56px);
+  font-weight: 700;
+  letter-spacing: -1px;
+}
+
+.contact-section p {
+  color: var(--text-dim);
+  font-size: 16px;
+  max-width: 400px;
+}
+
+.contact-links {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.contact-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 24px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  text-decoration: none;
+  color: var(--text);
+  font-size: 14px;
+  transition: all 0.4s;
+}
+
+.contact-link:hover {
+  border-color: var(--accent);
+  transform: translateY(-3px);
+  box-shadow: 0 12px 30px rgba(0,0,0,0.3);
+}
+
+.contact-link svg {
+  width: 18px;
+  height: 18px;
+  fill: var(--accent);
+}
+
+/* FOOTER */
+footer {
+  text-align: center;
+  padding: 40px;
+  font-size: 12px;
+  color: var(--text-dim);
+  border-top: 1px solid var(--border);
+  font-family: 'Space Grotesk', sans-serif;
+  letter-spacing: 1px;
+}
+
+/* ANIMATIONS */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.reveal {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: all 0.8s cubic-bezier(.4,0,.2,1);
+}
+
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* RESPONSIVE */
+@media (max-width: 768px) {
+  nav { display: none; }
+  section { padding: 60px 20px; }
+  .about-grid { grid-template-columns: 1fr; gap: 32px; }
+  .info-grid { grid-template-columns: 1fr; }
+  .skills-categories { grid-template-columns: 1fr; }
+  .project-card { padding: 24px; }
+  .timeline { padding-left: 28px; }
+  .timeline-item::before { left: -26px; }
+}
+
+/* Custom cursor glow */
+.cursor-glow {
+  position: fixed;
+  width: 300px;
+  height: 300px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(201,160,220,0.06), transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+  transform: translate(-50%, -50%);
+  transition: transform 0.1s;
+}
